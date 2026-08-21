@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>8月灯具&派对用品寻品表</title>
+    <title>9月灯具&派对用品寻品表</title>
     <style>
         body { font-family: 'PingFang SC', sans-serif; background: #f4f4f7; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -34,7 +34,7 @@
 <body>
 <div class="container">
     <header>
-        <h1>8月灯具&派对用品寻品表</h1>
+        <h1>9月灯具&派对用品寻品表</h1>
         <div class="desc-box">
             🔥优先选P0：P0 级产品价格更优
             💰高效提报：单击红框 ID 快速复制，搜索该 ID 报满所有型号流量翻倍！
@@ -46,7 +46,8 @@
         <input type="text" id="searchInput" placeholder="搜索标题/ID..." oninput="debouncedFilter()">
         
         <select id="l1Filter" onchange="updateL2(); applyFilters()"><option value="">二级类目(全部)</option></select>
-        <select id="l2Filter" onchange="applyFilters()"><option value="">三级类目(全部)</option></select>
+        <select id="l2Filter" onchange="updateL3(); applyFilters()"><option value="">三级类目(全部)</option></select>
+        <select id="l3Filter" onchange="applyFilters()"><option value="">四级类目(全部)</option></select>
         
         <select id="pFilter" onchange="applyFilters()"><option value="">P0/P1(全部)</option><option value="P0">P0</option><option value="P1">P1</option></select>
         <select id="tagFilter" onchange="applyFilters()"><option value="">销售优先级(全部)</option></select>
@@ -115,7 +116,7 @@
                 }
                 r.push(cur.trim()); r.push(index);
                 return r;
-            }).filter(a => a.length >= 11); // 保证基础列完整
+            }).filter(a => a.length >= 20); // 保证基础列完整（新表头共20列）
             
             initFilters(); 
             applyFilters();
@@ -133,7 +134,11 @@
         }
     }
 
-    // 🎯 根据实际导出的 data.csv 表头进行完美索引分配
+    // 🎯 根据新版 data.csv 表头重新对应列索引
+    // 0 item name中文 | 1 model name中文 | 2 price | 3 image url | 4 product link
+    // 5 二级类目 | 6 三级类目 | 7 四级类目 | 8 邀请码 | 9 model id
+    // 10 final_1688_link | 11 price judge | 12 销售优先级 | 13 itemid | 14 最大价格
+    // 15 销售优先级(重复) | 16 该款式有sku数 | 17 是否有高价品加投资源 | 18 是否为重抛货 | 19 是否重点招募
     const mapData = (arr) => {
         return {
             title: arr[0],               // A列: item name
@@ -143,16 +148,17 @@
             link: arr[4] || "",          // E列: product link
             l1: arr[5] || "",            // F列: 二级类目
             l2: arr[6] || "",            // G列: 三级类目
-            inviteId: cleanId(arr[7]),   // H列: 邀请码
-            modelId: cleanId(arr[8]),    // I列: model id
-            link1688: arr[9] || "",      // J列: final_1688
-            judge: arr[10] || "P1",      // K列: price judg
-            specialTag: arr[11] || "",   // L列: 销售优先级
-            
-            modelCount: arr[15] || "1",  // P列: 该款式有几款
-            highPrice: arr[16] || "否",  // Q列: 是否有高价品...
-            heavyCargo: arr[17] || "否", // R列: 是否为重抛货
-            focusRecruit: arr[18] || "否"// S列: 是否重点招募
+            l3: arr[7] || "",            // H列: 四级类目（新增）
+            inviteId: cleanId(arr[8]),   // I列: 邀请码
+            modelId: cleanId(arr[9]),    // J列: model id
+            link1688: arr[10] || "",     // K列: final_1688
+            judge: arr[11] || "P1",      // L列: price judge
+            specialTag: arr[12] || "",   // M列: 销售优先级
+
+            modelCount: arr[16] || "1",  // Q列: 该款式有几款
+            highPrice: arr[17] || "否",  // R列: 是否有高价品...
+            heavyCargo: arr[18] || "否", // S列: 是否为重抛货
+            focusRecruit: arr[19] || "否"// T列: 是否重点招募
         };
     };
 
@@ -223,6 +229,7 @@
         const q = document.getElementById('searchInput').value.toLowerCase().trim();
         const l1 = document.getElementById('l1Filter').value.trim();
         const l2 = document.getElementById('l2Filter').value.trim();
+        const l3 = document.getElementById('l3Filter').value.trim();
         const p = document.getElementById('pFilter').value.trim();
         const tag = document.getElementById('tagFilter').value.trim();
         
@@ -239,6 +246,7 @@
             const matchQuery = !q || (i.title && i.title.toLowerCase().includes(q)) || (i.inviteId && i.inviteId.toLowerCase().includes(q));
             const matchL1 = !l1 || (i.l1 && i.l1.trim() === l1);
             const matchL2 = !l2 || (i.l2 && i.l2.trim() === l2);
+            const matchL3 = !l3 || (i.l3 && i.l3.trim() === l3);
             const matchP = !p || (i.judge && i.judge.trim() === p);
             const matchTag = !tag || (i.specialTag && i.specialTag.trim() === tag);
             
@@ -247,7 +255,7 @@
             const matchFRecruit = !fRecruit || (i.focusRecruit && i.focusRecruit.trim() === fRecruit);
             const matchPrice = i.price >= min && i.price <= max;
             
-            return matchQuery && matchL1 && matchL2 && matchP && matchTag && matchHPrice && matchHCargo && matchFRecruit && matchPrice;
+            return matchQuery && matchL1 && matchL2 && matchL3 && matchP && matchTag && matchHPrice && matchHCargo && matchFRecruit && matchPrice;
         });
         
         const sort = document.getElementById('sortOrder').value;
@@ -268,14 +276,14 @@
 
         const tagSelect = document.getElementById('tagFilter');
         tagSelect.innerHTML = '<option value="">销售优先级(全部)</option>';
-        [...new Set(products.map(p => p[11] ? p[11].trim() : ""))].filter(v => v).forEach(v => {
+        [...new Set(products.map(p => p[12] ? p[12].trim() : ""))].filter(v => v).forEach(v => {
             tagSelect.innerHTML += `<option value="${v}">${v}</option>`;
         });
 
         updateL2();
     }
 
-    // 二、三级类目强联动逻辑
+    // 二、三、四级类目强联动逻辑
     function updateL2() {
         const l1Value = document.getElementById('l1Filter').value;
         const s = document.getElementById('l2Filter');
@@ -289,6 +297,28 @@
         )];
 
         availableL2.forEach(v => {
+            s.innerHTML += `<option value="${v}">${v}</option>`;
+        });
+
+        updateL3();
+    }
+
+    function updateL3() {
+        const l1Value = document.getElementById('l1Filter').value;
+        const l2Value = document.getElementById('l2Filter').value;
+        const s = document.getElementById('l3Filter');
+        s.innerHTML = '<option value="">四级类目(全部)</option>';
+
+        const availableL3 = [...new Set(
+            products
+            .filter(p => p &&
+                (!l1Value || (p[5] && p[5].trim() === l1Value.trim())) &&
+                (!l2Value || (p[6] && p[6].trim() === l2Value.trim())))
+            .map(p => p[7] ? p[7].trim() : "")
+            .filter(v => v)
+        )];
+
+        availableL3.forEach(v => {
             s.innerHTML += `<option value="${v}">${v}</option>`;
         });
     }
